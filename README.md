@@ -70,3 +70,13 @@ azure-platform/
 
 └── secrets/
     └── README.md   # leer, erklärt nur wo Secrets liegen
+
+| Ordner       | Zweck                                 |
+| ------------ | ------------------------------------- |
+| `infra/`     | **Infrastruktur** (Netz, VM, Storage) |
+| `bootstrap/` | **Erstkonfiguration beim VM-Start**   |
+| `scripts/`   | Wiederverwendbare Tools               |
+| `configs/`   | App- & Service-Konfiguration          |
+| `services/`  | systemd, Docker, Supervisor           |
+| `pipelines/` | CI/CD                                 |
+| `docs/`      | Wissen ≠ Code                         |

