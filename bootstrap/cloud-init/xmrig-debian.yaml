@@ -31,7 +31,7 @@ runcmd:
     PASS="${VMNAME}"
     echo "Generated xmrig pass: $PASS"
 
-    CONFIG="/xmrig/xmrig-6.25.0/config.json"
+    CONFIG="/xmrig/config.json"
 
     cat <<EOF > "$CONFIG"
     {
@@ -97,8 +97,8 @@ runcmd:
     Type=simple
     User=xmriguser
     Group=xmriguser
-    WorkingDirectory=/xmrig/xmrig-6.25.0
-    ExecStart=/xmrig/xmrig-6.25.0/xmrig
+    WorkingDirectory=/xmrig
+    ExecStart=/xmrig/xmrig
     Restart=always
     RestartSec=15
     Nice=10
