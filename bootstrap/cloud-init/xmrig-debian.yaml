@@ -7,6 +7,7 @@ packages:
   - wget
   - tar
   - curl
+  - libhwloc15
   - unattended-upgrades
 
 runcmd:
